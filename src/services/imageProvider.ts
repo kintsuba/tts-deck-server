@@ -48,10 +48,19 @@ const ensureWithinSize = (asset: CachedAsset) => {
 export const getImage = async (
   descriptor: ImageDescriptor,
 ): Promise<ProvidedImage> => {
+  console.debug("[imageProvider] getImage start", {
+    id: descriptor.id,
+    imageUri: descriptor.imageUri,
+  });
   try {
     const cached = await getCachedImage(descriptor.id);
 
     if (cached) {
+      console.debug("[imageProvider] cache hit", {
+        id: descriptor.id,
+        bytes: cached.bytes,
+        sourceUrl: cached.sourceUrl,
+      });
       ensureWithinSize(cached);
       return {
         ...cached,
@@ -64,12 +73,26 @@ export const getImage = async (
     }
 
     const remote = await fetchImage(descriptor.imageUri);
+    console.debug("[imageProvider] fetched remote image", {
+      id: descriptor.id,
+      bytes: remote.bytes,
+      contentType: remote.contentType,
+      resolvedUrl: remote.url,
+    });
     const asset = fromFetchedImage(descriptor.id, remote);
     ensureWithinSize(asset);
 
     try {
       await putCachedImage(asset);
+      console.debug("[imageProvider] cached remote image", {
+        id: descriptor.id,
+        bytes: asset.bytes,
+      });
     } catch (cause) {
+      console.error("[imageProvider] failed to cache image", {
+        id: descriptor.id,
+        message: (cause as Error)?.message,
+      });
       throw new ImageProvisionError(
         `Failed to persist image ${descriptor.id} in cache`,
         { cause, code: "merge.image_cache_failed" },
@@ -81,6 +104,16 @@ export const getImage = async (
       wasCached: false,
     };
   } catch (cause) {
+    console.error("[imageProvider] getImage failed", {
+      id: descriptor.id,
+      imageUri: descriptor.imageUri,
+      name: (cause as Error)?.name,
+      message: (cause as Error)?.message,
+      status: (cause as ImageFetchError | ImageProvisionError)?.status,
+      code: (cause as ImageProvisionError)?.code,
+      causeName: (cause as { cause?: { name?: string } })?.cause?.name,
+      causeMessage: (cause as { cause?: { message?: string } })?.cause?.message,
+    });
     if (cause instanceof ImageProvisionError) {
       throw cause;
     }

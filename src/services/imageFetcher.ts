@@ -1,5 +1,10 @@
+import got, {
+  CancelError,
+  RequestError,
+  TimeoutError,
+  type Response,
+} from "got";
 import { loadConfig } from "../config";
-import { readStream } from "../utils/stream";
 
 const config = loadConfig();
 const FETCH_TIMEOUT_MS =
@@ -48,46 +53,113 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
     );
   }
 
-  const controller = new AbortController();
-  const timeout = globalThis.setTimeout(
-    () => controller.abort(),
-    FETCH_TIMEOUT_MS,
-  );
+  const request = got.get(url.toString(), {
+    timeout: { request: FETCH_TIMEOUT_MS },
+    followRedirect: true,
+    throwHttpErrors: false,
+    retry: { limit: 0 },
+    responseType: "buffer",
+  });
 
-  let response: Response;
+  let canceledBytes: number | undefined;
+  request.on("downloadProgress", ({ transferred }) => {
+    if (transferred > MAX_IMAGE_BYTES && canceledBytes === undefined) {
+      canceledBytes = transferred;
+      request.cancel();
+    }
+  });
+  let response: Response<Buffer>;
+  let buffer: Buffer;
 
   try {
-    response = await fetch(url, {
-      signal: controller.signal,
-      redirect: "follow",
+    console.debug("[imageFetcher] fetching", {
+      url: url.toString(),
+      timeoutMs: FETCH_TIMEOUT_MS,
+    });
+    response = await request;
+    buffer = response.rawBody ?? response.body;
+    console.debug("[imageFetcher] fetched", {
+      url: response.url ?? url.toString(),
+      statusCode: response.statusCode,
+      bytes: buffer?.byteLength,
+      contentType: response.headers["content-type"],
     });
   } catch (cause) {
-    if ((cause as Error)?.name === "AbortError") {
+    if (canceledBytes !== undefined) {
+      console.warn("[imageFetcher] download canceled after exceeding limit", {
+        url: url.toString(),
+        transferred: canceledBytes,
+        limit: MAX_IMAGE_BYTES,
+      });
+      throw new ImageFetchError(
+        `Image at ${url} exceeds maximum allowed size (${canceledBytes} > ${MAX_IMAGE_BYTES})`,
+        undefined,
+        { cause },
+      );
+    }
+
+    if (cause instanceof TimeoutError) {
+      console.warn("[imageFetcher] timed out", {
+        url: url.toString(),
+        timeoutMs: FETCH_TIMEOUT_MS,
+      });
       throw new ImageFetchError(`Timed out fetching image: ${url}`, 408, {
         cause,
       });
     }
 
-    const reason = (cause as Error)?.message
-      ? ` (${(cause as Error).message})`
-      : "";
-    throw new ImageFetchError(
-      `Failed to fetch image: ${url}${reason}`,
-      undefined,
-      { cause },
-    );
-  } finally {
-    globalThis.clearTimeout(timeout);
+    if (cause instanceof CancelError) {
+      console.warn("[imageFetcher] request canceled", {
+        url: url.toString(),
+      });
+      throw new ImageFetchError(`Request canceled while fetching image: ${url}`, undefined, {
+        cause,
+      });
+    }
+
+    if (cause instanceof RequestError) {
+      const reason = cause.message ? ` (${cause.message})` : "";
+      console.warn("[imageFetcher] request error", {
+        url: url.toString(),
+        code: cause.code,
+        message: cause.message,
+      });
+      throw new ImageFetchError(
+        `Failed to fetch image: ${url}${reason}`,
+        undefined,
+        { cause },
+      );
+    }
+
+    console.error("[imageFetcher] unexpected error", {
+      url: url.toString(),
+      name: (cause as Error)?.name,
+      message: (cause as Error)?.message,
+    });
+    throw new ImageFetchError(`Failed to fetch image: ${url}`, undefined, {
+      cause,
+    });
   }
 
-  if (!response.ok) {
+  if (!response) {
+    throw new ImageFetchError(`Missing response when fetching image: ${url}`);
+  }
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    console.warn("[imageFetcher] non-success status", {
+      url: response.url ?? url.toString(),
+      statusCode: response.statusCode,
+    });
     throw new ImageFetchError(
-      `Remote server responded with ${response.status} for ${url}`,
-      response.status,
+      `Remote server responded with ${response.statusCode} for ${url}`,
+      response.statusCode,
     );
   }
 
-  const contentTypeRaw = response.headers.get("content-type");
+  const contentTypeHeader = response.headers["content-type"];
+  const contentTypeRaw = Array.isArray(contentTypeHeader)
+    ? contentTypeHeader[0]
+    : contentTypeHeader;
   const contentType = contentTypeRaw?.split(";")[0]?.trim() ?? "";
 
   if (!contentType || !contentType.startsWith("image/")) {
@@ -96,10 +168,11 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
     );
   }
 
-  const lengthHeader = response.headers.get("content-length");
+  const lengthHeader = response.headers["content-length"];
 
   if (lengthHeader) {
-    const bytes = Number.parseInt(lengthHeader, 10);
+    const lengthValue = Array.isArray(lengthHeader) ? lengthHeader[0] : lengthHeader;
+    const bytes = Number.parseInt(lengthValue ?? "", 10);
 
     if (Number.isFinite(bytes) && bytes > MAX_IMAGE_BYTES) {
       throw new ImageFetchError(
@@ -108,15 +181,16 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
     }
   }
 
-  const bodySource =
-    response.body ?? new Uint8Array(await response.arrayBuffer());
-
-  const buffer = await readStream(bodySource, MAX_IMAGE_BYTES);
+  if (buffer.byteLength > MAX_IMAGE_BYTES) {
+    throw new ImageFetchError(
+      `Image at ${url} exceeds maximum allowed size (${buffer.byteLength} > ${MAX_IMAGE_BYTES})`,
+    );
+  }
 
   return {
     buffer,
     bytes: buffer.byteLength,
     contentType,
-    url: url.toString(),
+    url: response.url ?? url.toString(),
   };
 };
