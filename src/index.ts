@@ -1,9 +1,11 @@
-import { serve } from '@hono/node-server';
-import { getApp } from './server';
+import { serve } from "@hono/node-server";
+import { getApp } from "./server";
+import { loadConfig } from "./config";
 
-const port = Number(process.env.PORT ?? 3000);
+const config = loadConfig();
+const port = config.PORT;
 
-const app = getApp();
+const app = getApp(config);
 
 console.log(`Starting server on port ${port}`);
 

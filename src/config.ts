@@ -1,5 +1,5 @@
-import { config as loadEnv } from 'dotenv';
-import { z } from 'zod';
+import { config as loadEnv } from "dotenv";
+import { z } from "zod";
 
 loadEnv({ quiet: true });
 
@@ -8,24 +8,27 @@ type Env = Record<string, string | undefined>;
 const envSchema = z
   .object({
     PORT: z.coerce.number().int().nonnegative().default(3000),
-    AWS_ENDPOINT_URL: z.string().url().optional(),
-    AWS_REGION: z.string().min(1, 'AWS_REGION is required'),
-    AWS_S3_BUCKET: z.string().min(1, 'AWS_S3_BUCKET is required'),
-    AWS_ACCESS_KEY_ID: z.string().min(1, 'AWS_ACCESS_KEY_ID is required'),
+    AWS_ENDPOINT_URL: z.url().optional(),
+    AWS_REGION: z.string().min(1, "AWS_REGION is required"),
+    AWS_S3_BUCKET: z.string().min(1, "AWS_S3_BUCKET is required"),
+    AWS_ACCESS_KEY_ID: z.string().min(1, "AWS_ACCESS_KEY_ID is required"),
     AWS_SECRET_ACCESS_KEY: z
       .string()
-      .min(1, 'AWS_SECRET_ACCESS_KEY is required'),
-    MERGE_OUTPUT_FORMAT: z
-      .enum(['png', 'jpeg'])
-      .default('png'),
-    CACHE_PREFIX: z.string().default('cache/'),
-    MAX_IMAGE_BYTES: z.coerce.number().int().positive().default(10 * 1024 * 1024),
+      .min(1, "AWS_SECRET_ACCESS_KEY is required"),
+    MERGE_OUTPUT_FORMAT: z.enum(["png", "jpeg"]).default("png"),
+    CACHE_PREFIX: z.string().default("cache/"),
+    MAX_IMAGE_BYTES: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(10 * 1024 * 1024),
     FETCH_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
     FETCH_CONCURRENCY: z.coerce.number().int().positive().max(16).default(5),
   })
   .transform((value) => ({
     ...value,
-    mergeOutputMime: value.MERGE_OUTPUT_FORMAT === 'png' ? 'image/png' : 'image/jpeg',
+    mergeOutputMime:
+      value.MERGE_OUTPUT_FORMAT === "png" ? "image/png" : "image/jpeg",
   }));
 
 const deriveEnv = (raw: Env): Env => ({
