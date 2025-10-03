@@ -11,9 +11,11 @@
    → If empty: ERROR "No feature description provided"
 2. Extract key concepts from description
    → Identify: actors, actions, data, constraints
+   → Capture UX patterns, accessibility expectations, and performance targets; mark [NEEDS CLARIFICATION] when unspecified
 3. For each unclear aspect:
    → Mark with [NEEDS CLARIFICATION: specific question]
 4. Fill User Scenarios & Testing section
+   → Include accessibility notes and measurable performance expectations per scenario
    → If no clear user flow: ERROR "Cannot determine user scenarios"
 5. Generate Functional Requirements
    → Each requirement must be testable
@@ -31,6 +33,7 @@
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
 - 👥 Written for business stakeholders, not developers
+- 🎯 Document UX patterns, accessibility commitments, and performance targets clearly
 
 ### Section Requirements
 - **Mandatory sections**: Must be completed for every feature
@@ -58,8 +61,8 @@ When creating this spec from a user prompt:
 [Describe the main user journey in plain language]
 
 ### Acceptance Scenarios
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
+1. **Given** [initial state], **When** [action], **Then** [expected outcome] (include expected latency or throughput when relevant)
+2. **Given** [initial state], **When** [action], **Then** [expected outcome] (note accessibility or UX constraints that MUST hold)
 
 ### Edge Cases
 - What happens when [boundary condition]?
@@ -72,7 +75,7 @@ When creating this spec from a user prompt:
 - **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+- **FR-005**: System MUST meet [performance/UX constraint, e.g., "respond within 200ms p95 while returning localized messaging"]
 
 *Example of marking unclear requirements:*
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
@@ -96,7 +99,7 @@ When creating this spec from a user prompt:
 ### Requirement Completeness
 - [ ] No [NEEDS CLARIFICATION] markers remain
 - [ ] Requirements are testable and unambiguous  
-- [ ] Success criteria are measurable
+- [ ] Success criteria are measurable (include UX and performance metrics)
 - [ ] Scope is clearly bounded
 - [ ] Dependencies and assumptions identified
 

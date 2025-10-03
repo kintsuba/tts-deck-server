@@ -1,0 +1,33 @@
+{
+  "name": "tts-deck-server",
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.15.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "test": "pnpm run --silent build && node --test \"dist/**/*.test.js\" \"dist/**/__tests__/*.test.js\"",
+    "lint": "tsc --noEmit",
+    "benchmark:merge": "ts-node --transpile-only scripts/benchmarks/merge-benchmark.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.901.0",
+    "@hono/node-server": "^1.19.5",
+    "hono": "^4.9.9",
+    "sharp": "^0.34.4",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.2",
+    "aws-sdk-client-mock": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

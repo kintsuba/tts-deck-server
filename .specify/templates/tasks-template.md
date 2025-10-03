@@ -17,6 +17,8 @@
    → Tests: contract tests, integration tests
    → Core: models, services, CLI commands
    → Integration: DB, middleware, logging
+   → Observability: instrumentation, metrics pipelines, dashboards
+   → UX Consistency: docs, acceptance walkthroughs, change communication
    → Polish: unit tests, performance, docs
 4. Apply task rules:
    → Different files = mark [P] for parallel
@@ -66,21 +68,22 @@
 ## Phase 3.4: Integration
 - [ ] T015 Connect UserService to DB
 - [ ] T016 Auth middleware
-- [ ] T017 Request/response logging
-- [ ] T018 CORS and security headers
+- [ ] T017 Establish structured logging and metrics emission
+- [ ] T018 Configure monitoring dashboards and alert thresholds
+- [ ] T019 CORS and security headers
 
 ## Phase 3.5: Polish
-- [ ] T019 [P] Unit tests for validation in tests/unit/test_validation.py
-- [ ] T020 Performance tests (<200ms)
-- [ ] T021 [P] Update docs/api.md
-- [ ] T022 Remove duplication
-- [ ] T023 Run manual-testing.md
+- [ ] T020 [P] Unit tests for validation in tests/unit/test_validation.py
+- [ ] T021 Performance validation meets SLOs (<200ms p95) and export report
+- [ ] T022 [P] Update docs/api.md and UX examples
+- [ ] T023 Remove duplication
+- [ ] T024 Run manual-testing.md with UX/accessibility checklist
 
 ## Dependencies
 - Tests (T004-T007) before implementation (T008-T014)
 - T008 blocks T009, T015
-- T016 blocks T018
-- Implementation before polish (T019-T023)
+- T016 blocks T017-T019
+- Implementation before polish and compliance (T020-T024)
 
 ## Parallel Example
 ```
@@ -112,8 +115,11 @@ Task: "Integration test auth in tests/integration/test_auth.py"
    - Each story → integration test [P]
    - Quickstart scenarios → validation tasks
 
-4. **Ordering**:
-   - Setup → Tests → Models → Services → Endpoints → Polish
+4. **From Constitution Guardrails**:
+   - Include instrumentation, monitoring, UX documentation, and release communication tasks outlined in the plan.
+
+5. **Ordering**:
+   - Setup → Tests → Models → Services → Endpoints → Observability → UX → Polish
    - Dependencies block parallel execution
 
 ## Validation Checklist
@@ -123,5 +129,7 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 - [ ] All entities have model tasks
 - [ ] All tests come before implementation
 - [ ] Parallel tasks truly independent
+- [ ] Instrumentation/monitoring tasks present for each affected service
+- [ ] UX and documentation updates captured
 - [ ] Each task specifies exact file path
 - [ ] No task modifies same file as another [P] task
