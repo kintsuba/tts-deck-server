@@ -4,6 +4,7 @@ import { ImageFetchError, fetchImage } from './imageFetcher';
 import { getCachedImage, putCachedImage } from './imageCache';
 
 const config = loadConfig();
+const MAX_IMAGE_BYTES = config.MAX_IMAGE_BYTES !== undefined ? Number(config.MAX_IMAGE_BYTES) : 10 * 1024 * 1024;
 
 export interface ImageDescriptor {
   id: string;
@@ -33,9 +34,9 @@ export class ImageProvisionError extends Error {
 }
 
 const ensureWithinSize = (asset: CachedAsset) => {
-  if (asset.bytes > config.MAX_IMAGE_BYTES) {
+  if (asset.bytes > MAX_IMAGE_BYTES) {
     throw new ImageProvisionError(
-      `Image ${asset.id} exceeds maximum allowed size (${asset.bytes} > ${config.MAX_IMAGE_BYTES})`,
+      `Image ${asset.id} exceeds maximum allowed size (${asset.bytes} > ${MAX_IMAGE_BYTES})`,
       { status: 413, code: 'merge.image_too_large' },
     );
   }

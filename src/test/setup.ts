@@ -8,8 +8,8 @@ type FetchErrorFactory = () => unknown;
 export const DEFAULT_ENV = {
   PORT: '3000',
   AWS_ENDPOINT_URL: 'http://127.0.0.1:4566',
-  AWS_REGION: 'us-east-1',
-  AWS_S3_BUCKET: 'tts-deck-cache-test',
+  AWS_DEFAULT_REGION: 'us-east-1',
+  AWS_S3_BUCKET_NAME: 'tts-deck-cache-test',
   AWS_ACCESS_KEY_ID: 'local-access-key',
   AWS_SECRET_ACCESS_KEY: 'local-secret-key',
   MERGE_OUTPUT_FORMAT: 'png',

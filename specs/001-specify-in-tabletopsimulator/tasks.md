@@ -4,7 +4,7 @@
 **Prerequisites**: plan.md (required); research.md, data-model.md, contracts/ (not yet provided)
 
 ## Phase 3.1: Setup
-- [X] T001 Create `.env.example` at repository root listing `PORT`, `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `MERGE_OUTPUT_FORMAT`, `CACHE_PREFIX`, `MAX_IMAGE_BYTES`, `FETCH_TIMEOUT_MS`, and `FETCH_CONCURRENCY` with safe local defaults plus inline comments describing expected values.
+- [X] T001 Create `.env.example` at repository root listing `PORT`, `AWS_DEFAULT_REGION`, `AWS_S3_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `MERGE_OUTPUT_FORMAT`, `CACHE_PREFIX`, `MAX_IMAGE_BYTES`, `FETCH_TIMEOUT_MS`, and `FETCH_CONCURRENCY` with safe local defaults plus inline comments describing expected values.
 - [X] T002 Update `package.json`/`package-lock.json` to add the dev dependency `aws-sdk-client-mock` (latest 3.x) and a `lint` script that runs `tsc --noEmit`; run `npm install` so the lockfile reflects the new dependency.
 - [X] T003 Scaffold integration-test utilities by creating `src/test/setup.ts` (reset `loadConfig` cache, seed default env vars, and export helpers for mocking fetch responses) and `src/test/utils/s3Mock.ts` (wrap `aws-sdk-client-mock` for S3 get/put expectations) so downstream tests can bootstrap deterministic environments.
 

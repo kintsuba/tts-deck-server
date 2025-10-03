@@ -3,7 +3,7 @@ import { getApp } from "./server";
 import { loadConfig } from "./config";
 
 const config = loadConfig();
-const port = config.PORT;
+const port = config.PORT !== undefined ? Number(config.PORT) : 3000;
 
 const app = getApp(config);
 

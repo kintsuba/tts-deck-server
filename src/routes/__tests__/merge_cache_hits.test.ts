@@ -13,8 +13,6 @@ import { loadConfig } from "../../config";
 
 const TEST_BUCKET = "tts-deck-cache-test";
 
-const config = loadConfig();
-
 const createTestImage = async (seed: number) => {
   return sharp({
     create: {
@@ -35,6 +33,7 @@ const createTestImage = async (seed: number) => {
 
 test("POST /merge reuses cached entries without refetching", async () => {
   applyTestEnv();
+  const config = loadConfig();
   resetS3Mock();
   const fetchMock = installFetchMock();
 

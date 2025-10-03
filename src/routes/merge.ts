@@ -1,14 +1,11 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
-import { loadConfig } from '../config';
 import { encodeMetadataHeader } from '../models/mergeResult';
 import { MergeRequestValidationError } from '../models/mergeRequest';
 import { mergeDeck } from '../services/mergeService';
 import { ImageProvisionError } from '../services/imageProvider';
 import type { Logger } from '../utils/logger';
-
-const config = loadConfig();
 
 export const registerMergeRoute = (app: Hono) => {
   app.post('/merge', async (c) => {

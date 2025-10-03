@@ -12,8 +12,6 @@ import { loadConfig } from "../../config";
 
 const TEST_BUCKET = "tts-deck-cache-test";
 
-const config = loadConfig();
-
 const createTestImage = async (seed: number) => {
   const palette = [seed % 255, (seed * 7) % 255, (seed * 13) % 255];
 
@@ -31,6 +29,7 @@ const createTestImage = async (seed: number) => {
 
 test("POST /merge merges a full deck with fresh downloads", async () => {
   applyTestEnv();
+  const config = loadConfig();
   resetS3Mock();
   const fetchMock = installFetchMock();
 

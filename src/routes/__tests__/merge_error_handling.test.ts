@@ -7,10 +7,9 @@ import { loadConfig } from "../../config";
 
 const TEST_BUCKET = "tts-deck-cache-test";
 
-const config = loadConfig();
-
 test("POST /merge surfaces image fetch errors with actionable payload", async () => {
   applyTestEnv();
+  const config = loadConfig();
   resetS3Mock();
   const fetchMock = installFetchMock();
 

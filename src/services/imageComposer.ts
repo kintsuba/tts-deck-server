@@ -4,6 +4,7 @@ import type { ProvidedImage } from './imageProvider';
 import { GRID_COLUMNS, GRID_ROWS } from '../models/mergeRequest';
 
 const config = loadConfig();
+const OUTPUT_FORMAT = config.MERGE_OUTPUT_FORMAT === 'jpeg' ? 'jpeg' : 'png';
 
 export interface CompositeResult {
   buffer: Buffer;
@@ -55,14 +56,14 @@ export const composeGrid = async (
     throw new Error('Failed to resolve tile dimensions');
   }
 
-  const background = config.MERGE_OUTPUT_FORMAT === 'png'
+  const background = OUTPUT_FORMAT === 'png'
     ? { r: 0, g: 0, b: 0, alpha: 0 }
     : { r: 0, g: 0, b: 0, alpha: 1 };
 
   const preparedBuffers: Buffer[] = [];
 
   const totalCells = grid.rows * grid.columns;
-  const channels = config.MERGE_OUTPUT_FORMAT === 'png' ? 4 : 3;
+  const channels = OUTPUT_FORMAT === 'png' ? 4 : 3;
 
   const blankTile = await sharp({
     create: {
@@ -72,7 +73,7 @@ export const composeGrid = async (
       background: background as Color,
     },
   })
-    .toFormat(config.MERGE_OUTPUT_FORMAT)
+    .toFormat(OUTPUT_FORMAT)
     .toBuffer();
 
   for (const image of images) {
@@ -81,12 +82,12 @@ export const composeGrid = async (
       background,
     });
 
-    if (config.MERGE_OUTPUT_FORMAT === 'jpeg') {
+    if (OUTPUT_FORMAT === 'jpeg') {
       pipeline = pipeline.flatten({ background });
     }
 
     const prepared = await pipeline
-      .toFormat(config.MERGE_OUTPUT_FORMAT)
+      .toFormat(OUTPUT_FORMAT)
       .toBuffer();
 
     preparedBuffers.push(prepared);
@@ -121,7 +122,7 @@ export const composeGrid = async (
 
   const composed = canvas.composite(composites);
 
-  if (config.MERGE_OUTPUT_FORMAT === 'png') {
+  if (OUTPUT_FORMAT === 'png') {
     composed.png({ compressionLevel: 9 });
   } else {
     composed.jpeg({ quality: 90, chromaSubsampling: '4:4:4' });
@@ -135,6 +136,6 @@ export const composeGrid = async (
     height: outputHeight,
     tileWidth,
     tileHeight,
-    format: config.MERGE_OUTPUT_FORMAT,
+    format: OUTPUT_FORMAT,
   };
 };

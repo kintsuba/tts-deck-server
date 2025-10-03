@@ -2,6 +2,8 @@ import { loadConfig } from '../config';
 import { readStream } from '../utils/stream';
 
 const config = loadConfig();
+const FETCH_TIMEOUT_MS = config.FETCH_TIMEOUT_MS !== undefined ? Number(config.FETCH_TIMEOUT_MS) : 15_000;
+const MAX_IMAGE_BYTES = config.MAX_IMAGE_BYTES !== undefined ? Number(config.MAX_IMAGE_BYTES) : 10 * 1024 * 1024;
 
 const SUPPORTED_PROTOCOLS = new Set(['http:', 'https:']);
 
@@ -33,7 +35,7 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
   }
 
   const controller = new AbortController();
-  const timeout = globalThis.setTimeout(() => controller.abort(), config.FETCH_TIMEOUT_MS);
+  const timeout = globalThis.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   let response: Response;
 
@@ -69,16 +71,16 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
   if (lengthHeader) {
     const bytes = Number.parseInt(lengthHeader, 10);
 
-    if (Number.isFinite(bytes) && bytes > config.MAX_IMAGE_BYTES) {
+    if (Number.isFinite(bytes) && bytes > MAX_IMAGE_BYTES) {
       throw new ImageFetchError(
-        `Image at ${url} exceeds maximum allowed size (${bytes} > ${config.MAX_IMAGE_BYTES})`,
+        `Image at ${url} exceeds maximum allowed size (${bytes} > ${MAX_IMAGE_BYTES})`,
       );
     }
   }
 
   const bodySource = response.body ?? new Uint8Array(await response.arrayBuffer());
 
-  const buffer = await readStream(bodySource, config.MAX_IMAGE_BYTES);
+  const buffer = await readStream(bodySource, MAX_IMAGE_BYTES);
 
   return {
     buffer,

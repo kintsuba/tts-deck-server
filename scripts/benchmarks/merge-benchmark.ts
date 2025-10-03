@@ -51,6 +51,9 @@ const runIteration = async () => {
   resetConfigCache();
   applyTestEnv();
   const config = loadConfig();
+  const bucket = config.AWS_S3_BUCKET_NAME ?? (() => {
+    throw new Error('AWS_S3_BUCKET_NAME is required for the benchmark');
+  })();
   const { mergeDeck } = await import('../../src/services/mergeService');
 
   const fetchMock = installFetchMock();
@@ -59,7 +62,7 @@ const runIteration = async () => {
   const payload: Array<{ id: string; imageUri: string }> = [];
 
   for (let index = 0; index < cardCount; index += 1) {
-    const card = await createCardPayload(index, config.AWS_S3_BUCKET);
+    const card = await createCardPayload(index, bucket);
     payload.push(card.descriptor);
     fetchMock.enqueueBuffer(card.response.buffer, { headers: card.response.headers });
     mockCachedImageMissing(card.cacheKey, { bucket: card.bucket });

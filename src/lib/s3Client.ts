@@ -4,12 +4,24 @@ import { loadConfig } from '../config';
 
 const config = loadConfig();
 
+const region = config.AWS_DEFAULT_REGION ?? (() => {
+  throw new Error('AWS_DEFAULT_REGION is required');
+})();
+
+const accessKeyId = config.AWS_ACCESS_KEY_ID ?? (() => {
+  throw new Error('AWS_ACCESS_KEY_ID is required');
+})();
+
+const secretAccessKey = config.AWS_SECRET_ACCESS_KEY ?? (() => {
+  throw new Error('AWS_SECRET_ACCESS_KEY is required');
+})();
+
 const clientConfig: S3ClientConfig = {
-  region: config.AWS_REGION,
+  region,
   forcePathStyle: true,
   credentials: {
-    accessKeyId: config.AWS_ACCESS_KEY_ID,
-    secretAccessKey: config.AWS_SECRET_ACCESS_KEY,
+    accessKeyId,
+    secretAccessKey,
   },
 };
 

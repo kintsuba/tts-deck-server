@@ -7,7 +7,13 @@ import { fromCacheStorage, toCacheMetadata, type CachedAsset } from '../models/c
 
 const config = loadConfig();
 
-const keyFor = (id: string) => `${config.CACHE_PREFIX}${id}`;
+const CACHE_PREFIX = config.CACHE_PREFIX ?? 'cache/';
+const MAX_IMAGE_BYTES = config.MAX_IMAGE_BYTES !== undefined ? Number(config.MAX_IMAGE_BYTES) : 10 * 1024 * 1024;
+const BUCKET = config.AWS_S3_BUCKET_NAME ?? (() => {
+  throw new Error('AWS_S3_BUCKET_NAME is required');
+})();
+
+const keyFor = (id: string) => `${CACHE_PREFIX}${id}`;
 
 export const getCachedImage = async (id: string): Promise<CachedAsset | null> => {
   const key = keyFor(id);
@@ -15,12 +21,12 @@ export const getCachedImage = async (id: string): Promise<CachedAsset | null> =>
   try {
     const response = await s3Client.send(
       new GetObjectCommand({
-        Bucket: config.AWS_S3_BUCKET,
+        Bucket: BUCKET,
         Key: key,
       }),
     );
 
-    const data = await toBuffer(response.Body, config.MAX_IMAGE_BYTES);
+    const data = await toBuffer(response.Body, MAX_IMAGE_BYTES);
     const contentType = response.ContentType ?? 'application/octet-stream';
     const metadata = response.Metadata ?? {};
 
@@ -42,7 +48,7 @@ export const putCachedImage = async (
 
   await s3Client.send(
     new PutObjectCommand({
-      Bucket: config.AWS_S3_BUCKET,
+      Bucket: BUCKET,
       Key: key,
       Body: asset.data,
       ContentType: asset.contentType,

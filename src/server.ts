@@ -55,16 +55,26 @@ export const getApp = (config: AppConfig) => {
     };
     let ok = true;
 
-    try {
-      await s3Client.send(
-        new HeadBucketCommand({ Bucket: config.AWS_S3_BUCKET })
-      );
-    } catch (error) {
+    const bucket = config.AWS_S3_BUCKET_NAME;
+
+    if (!bucket) {
       ok = false;
       diagnostics.s3 = {
         ok: false,
-        error: (error as Error).message,
+        error: 'AWS_S3_BUCKET_NAME is not configured',
       };
+    } else {
+      try {
+        await s3Client.send(
+          new HeadBucketCommand({ Bucket: bucket })
+        );
+      } catch (error) {
+        ok = false;
+        diagnostics.s3 = {
+          ok: false,
+          error: (error as Error).message,
+        };
+      }
     }
 
     try {

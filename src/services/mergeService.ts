@@ -8,6 +8,7 @@ import { mapConcurrently } from '../utils/promise';
 import { metrics } from '../utils/metrics';
 
 const config = loadConfig();
+const FETCH_CONCURRENCY = config.FETCH_CONCURRENCY !== undefined ? Number(config.FETCH_CONCURRENCY) : 5;
 
 export const mergeDeck = async (payload: unknown): Promise<MergeResult> => {
   const request = parseMergeRequest(payload);
@@ -20,7 +21,7 @@ export const executeMerge = async (request: MergeRequest): Promise<MergeResult> 
   const fetchDurations: number[] = [];
   let downloadFailures = 0;
 
-  const images = await mapConcurrently(request.cards, config.FETCH_CONCURRENCY, async (card) => {
+  const images = await mapConcurrently(request.cards, FETCH_CONCURRENCY, async (card) => {
     const fetchStartedAt = performance.now();
 
     try {
@@ -74,9 +75,11 @@ export const executeMerge = async (request: MergeRequest): Promise<MergeResult> 
 
   const durationMs = performance.now() - startedAt;
 
+  const contentType = composition.format === 'png' ? 'image/png' : 'image/jpeg';
+
   return {
     buffer: composition.buffer,
-    contentType: config.mergeOutputMime,
+    contentType,
     metadata: {
       totalRequested: request.cards.length,
       grid: request.grid,
@@ -88,7 +91,7 @@ export const executeMerge = async (request: MergeRequest): Promise<MergeResult> 
         width: composition.width,
         height: composition.height,
         format: composition.format,
-        contentType: config.mergeOutputMime,
+        contentType,
       },
       cached: cachedIds,
       downloaded: downloadedIds,
