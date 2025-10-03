@@ -1,4 +1,7 @@
+import { config as loadEnv } from 'dotenv';
 import { z } from 'zod';
+
+loadEnv({ quiet: true });
 
 type Env = Record<string, string | undefined>;
 
