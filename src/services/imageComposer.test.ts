@@ -1,25 +1,25 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-import sharp from 'sharp';
-import { randomUUID } from 'node:crypto';
-import { applyTestEnv } from '../test/setup';
-import { resetConfigCache } from '../config';
-import { fromFetchedImage } from '../models/cachedAsset';
-import type { ProvidedImage } from './imageProvider';
+import assert from "node:assert/strict";
+import test from "node:test";
+import sharp from "sharp";
+import { randomUUID } from "node:crypto";
+import { applyTestEnv } from "../test/setup";
+import { resetConfigCache } from "../config";
+import { fromFetchedImage } from "../models/cachedAsset";
+import type { ProvidedImage } from "./imageProvider";
 
 const reloadComposer = async () => {
   resetConfigCache();
-  const moduleId = require.resolve('./imageComposer');
+  const moduleId = require.resolve("./imageComposer");
   delete require.cache[moduleId];
-  return import('./imageComposer');
+  return import("./imageComposer");
 };
 
 const createImage = async (
   width: number,
   height: number,
-  options: { wasCached?: boolean; format?: 'png' | 'jpeg' } = {},
+  options: { wasCached?: boolean; format?: "png" | "jpeg" } = {},
 ): Promise<ProvidedImage> => {
-  const format = options.format ?? 'png';
+  const format = options.format ?? "png";
   const buffer = await sharp({
     create: {
       width,
@@ -34,8 +34,8 @@ const createImage = async (
   const asset = fromFetchedImage(randomUUID(), {
     buffer,
     bytes: buffer.byteLength,
-    contentType: format === 'png' ? 'image/png' : 'image/jpeg',
-    url: 'https://example.com/card.png',
+    contentType: format === "png" ? "image/png" : "image/jpeg",
+    url: "https://example.com/card.png",
   });
 
   return {
@@ -44,8 +44,8 @@ const createImage = async (
   };
 };
 
-test('composeGrid computes tile size from the largest source image', async () => {
-  applyTestEnv({ MERGE_OUTPUT_FORMAT: 'png' });
+test("composeGrid uses fixed tile dimensions for each card", async () => {
+  applyTestEnv({ MERGE_OUTPUT_FORMAT: "png" });
   const { composeGrid } = await reloadComposer();
 
   const images = [
@@ -56,14 +56,14 @@ test('composeGrid computes tile size from the largest source image', async () =>
 
   const result = await composeGrid(images, { rows: 1, columns: 3 });
 
-  assert.equal(result.tileWidth, 120);
-  assert.equal(result.tileHeight, 180);
-  assert.equal(result.width, 360);
-  assert.equal(result.height, 180);
+  assert.equal(result.tileWidth, 672);
+  assert.equal(result.tileHeight, 936);
+  assert.equal(result.width, 2016);
+  assert.equal(result.height, 936);
 });
 
-test('composeGrid pads empty cells when fewer images are supplied', async () => {
-  applyTestEnv({ MERGE_OUTPUT_FORMAT: 'png' });
+test("composeGrid pads empty cells when fewer images are supplied", async () => {
+  applyTestEnv({ MERGE_OUTPUT_FORMAT: "png" });
   const { composeGrid } = await reloadComposer();
 
   const images = [await createImage(80, 120), await createImage(80, 120)];
@@ -77,16 +77,16 @@ test('composeGrid pads empty cells when fewer images are supplied', async () => 
   assert.equal(metadata.height, result.height);
 });
 
-test('composeGrid honours jpeg output configuration', async () => {
-  applyTestEnv({ MERGE_OUTPUT_FORMAT: 'jpeg' });
+test("composeGrid honours jpeg output configuration", async () => {
+  applyTestEnv({ MERGE_OUTPUT_FORMAT: "jpeg" });
   const { composeGrid } = await reloadComposer();
 
-  const image = await createImage(90, 90, { format: 'jpeg' });
+  const image = await createImage(90, 90, { format: "jpeg" });
 
   const result = await composeGrid([image], { rows: 1, columns: 1 });
   const metadata = await sharp(result.buffer).metadata();
 
-  assert.equal(result.format, 'jpeg');
-  assert.equal(metadata.format, 'jpeg');
+  assert.equal(result.format, "jpeg");
+  assert.equal(metadata.format, "jpeg");
   assert.equal(metadata.hasAlpha, false);
 });

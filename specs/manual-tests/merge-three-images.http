@@ -1,0 +1,18 @@
+@host = https://tts-deck-server-production.up.railway.app
+@mergePath = /merge
+
+###
+# Merge three remote images into one TTS sheet
+POST {{host}}{{mergePath}}
+Content-Type: application/json
+
+[
+  {
+    "id": "f711ca08-6025-41ac-bf64-d8d6172bab6d",
+    "imageUri": "https://cards.scryfall.io/png/front/f/7/f711ca08-6025-41ac-bf64-d8d6172bab6d.png?1681965251"
+  },
+  {
+    "id": "17cecd0c-feb5-49d7-857d-0620d8adf6db",
+    "imageUri": "https://cards.scryfall.io/png/front/1/7/17cecd0c-feb5-49d7-857d-0620d8adf6db.png?1739402360"
+  }
+]

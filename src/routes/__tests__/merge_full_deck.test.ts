@@ -67,13 +67,13 @@ test("POST /merge merges a full deck with fresh downloads", async () => {
     assert.equal(response.headers.get("Content-Type"), "image/png");
     assert.equal(
       response.headers.get("X-Merge-Metadata-Encoding"),
-      "base64url"
+      "base64url",
     );
 
     const metadataHeader = response.headers.get("X-Merge-Metadata");
     assert.ok(metadataHeader, "metadata header should be present");
     const metadata = JSON.parse(
-      Buffer.from(metadataHeader, "base64url").toString("utf8")
+      Buffer.from(metadataHeader, "base64url").toString("utf8"),
     ) as Record<string, unknown>;
 
     assert.equal(metadata.totalRequested, 70);

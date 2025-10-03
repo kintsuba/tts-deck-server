@@ -37,7 +37,7 @@ test("POST /merge surfaces image fetch errors with actionable payload", async ()
     assert.equal(response.status, 502);
     assert.equal(
       response.headers.get("Content-Type"),
-      "application/json; charset=utf-8"
+      "application/json; charset=utf-8",
     );
     assert.equal(response.headers.get("X-Merge-Metadata"), null);
 

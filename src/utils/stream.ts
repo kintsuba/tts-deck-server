@@ -1,6 +1,6 @@
-import { Blob } from 'node:buffer';
-import { Readable } from 'node:stream';
-import type { ReadableStream as WebReadableStream } from 'node:stream/web';
+import { Blob } from "node:buffer";
+import { Readable } from "node:stream";
+import type { ReadableStream as WebReadableStream } from "node:stream/web";
 
 const toAsyncIterable = (body: unknown): AsyncIterable<Uint8Array> | null => {
   if (!body) {
@@ -38,14 +38,17 @@ const toAsyncIterable = (body: unknown): AsyncIterable<Uint8Array> | null => {
   return null;
 };
 
-export const readStream = async (body: unknown, limit = Number.POSITIVE_INFINITY): Promise<Buffer> => {
+export const readStream = async (
+  body: unknown,
+  limit = Number.POSITIVE_INFINITY,
+): Promise<Buffer> => {
   if (!body) {
-    throw new Error('Empty body received from stream');
+    throw new Error("Empty body received from stream");
   }
 
   if (body instanceof Buffer) {
     if (body.byteLength > limit) {
-      throw new Error('Stream exceeded configured limit');
+      throw new Error("Stream exceeded configured limit");
     }
 
     return body;
@@ -53,16 +56,16 @@ export const readStream = async (body: unknown, limit = Number.POSITIVE_INFINITY
 
   if (body instanceof Uint8Array) {
     if (body.byteLength > limit) {
-      throw new Error('Stream exceeded configured limit');
+      throw new Error("Stream exceeded configured limit");
     }
 
     return Buffer.from(body);
   }
 
-  if (typeof (body as Blob)?.arrayBuffer === 'function') {
+  if (typeof (body as Blob)?.arrayBuffer === "function") {
     const arrayBuffer = await (body as Blob).arrayBuffer();
     if (arrayBuffer.byteLength > limit) {
-      throw new Error('Stream exceeded configured limit');
+      throw new Error("Stream exceeded configured limit");
     }
 
     return Buffer.from(arrayBuffer);
@@ -71,7 +74,7 @@ export const readStream = async (body: unknown, limit = Number.POSITIVE_INFINITY
   const iterable = toAsyncIterable(body);
 
   if (!iterable) {
-    throw new Error('Unsupported body type received from stream');
+    throw new Error("Unsupported body type received from stream");
   }
 
   const chunks: Buffer[] = [];
@@ -82,7 +85,7 @@ export const readStream = async (body: unknown, limit = Number.POSITIVE_INFINITY
     total += buf.byteLength;
 
     if (total > limit) {
-      throw new Error('Stream exceeded configured limit');
+      throw new Error("Stream exceeded configured limit");
     }
 
     chunks.push(buf);
@@ -91,21 +94,32 @@ export const readStream = async (body: unknown, limit = Number.POSITIVE_INFINITY
   return Buffer.concat(chunks, total);
 };
 
-export const toBuffer = async (body: unknown, limit?: number): Promise<Buffer> =>
-  readStream(body, limit);
+export const toBuffer = async (
+  body: unknown,
+  limit?: number,
+): Promise<Buffer> => readStream(body, limit);
 
-const isAsyncIterable = (value: unknown): value is AsyncIterable<Uint8Array> => {
+const isAsyncIterable = (
+  value: unknown,
+): value is AsyncIterable<Uint8Array> => {
   if (!value) {
     return false;
   }
 
-  return typeof (value as AsyncIterable<Uint8Array>)[Symbol.asyncIterator] === 'function';
+  return (
+    typeof (value as AsyncIterable<Uint8Array>)[Symbol.asyncIterator] ===
+    "function"
+  );
 };
 
-const isWebReadableStream = (value: unknown): value is WebReadableStream<Uint8Array> => {
+const isWebReadableStream = (
+  value: unknown,
+): value is WebReadableStream<Uint8Array> => {
   if (!value) {
     return false;
   }
 
-  return typeof (value as WebReadableStream<Uint8Array>).getReader === 'function';
+  return (
+    typeof (value as WebReadableStream<Uint8Array>).getReader === "function"
+  );
 };

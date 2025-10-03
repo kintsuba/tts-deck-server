@@ -1,6 +1,6 @@
-import { inspect } from 'node:util';
+import { inspect } from "node:util";
 
-export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+export type LogLevel = "info" | "warn" | "error" | "debug";
 
 export type LogFields = Record<string, unknown>;
 
@@ -25,7 +25,7 @@ const formatError = (error: unknown) => {
     };
   }
 
-  return typeof error === 'object' ? error : inspect(error);
+  return typeof error === "object" ? error : inspect(error);
 };
 
 const writeLog = (level: LogLevel, message: string, fields: LogFields) => {
@@ -37,22 +37,25 @@ const writeLog = (level: LogLevel, message: string, fields: LogFields) => {
   };
 
   const serialized = JSON.stringify(entry);
-  const stream = level === 'error' ? process.stderr : process.stdout;
+  const stream = level === "error" ? process.stderr : process.stdout;
   stream.write(`${serialized}\n`);
 };
 
 const createLogger = (base: LogFields = {}): Logger => ({
   child: (fields: LogFields) => createLogger({ ...base, ...fields }),
-  debug: (message, fields = {}) => writeLog('debug', message, { ...base, ...fields }),
-  info: (message, fields = {}) => writeLog('info', message, { ...base, ...fields }),
-  warn: (message, fields = {}) => writeLog('warn', message, { ...base, ...fields }),
+  debug: (message, fields = {}) =>
+    writeLog("debug", message, { ...base, ...fields }),
+  info: (message, fields = {}) =>
+    writeLog("info", message, { ...base, ...fields }),
+  warn: (message, fields = {}) =>
+    writeLog("warn", message, { ...base, ...fields }),
   error: (message, error, fields = {}) => {
     const errorField = formatError(error);
     const merged: LogFields = errorField
       ? { ...base, ...fields, error: errorField }
       : { ...base, ...fields };
 
-    writeLog('error', message, merged);
+    writeLog("error", message, merged);
   },
 });
 

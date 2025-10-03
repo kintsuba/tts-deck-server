@@ -4,7 +4,7 @@ export const mapConcurrently = async <T, R>(
   mapper: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> => {
   if (concurrency < 1) {
-    throw new Error('Concurrency must be at least 1');
+    throw new Error("Concurrency must be at least 1");
   }
 
   const results: R[] = new Array(items.length);
@@ -25,7 +25,10 @@ export const mapConcurrently = async <T, R>(
     }
   };
 
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker());
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    () => worker(),
+  );
 
   await Promise.all(workers);
 

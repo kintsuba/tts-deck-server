@@ -1,21 +1,32 @@
-import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import type { PutObjectCommandInput } from '@aws-sdk/client-s3';
-import { loadConfig } from '../config';
-import { s3Client } from '../lib/s3Client';
-import { toBuffer } from '../utils/stream';
-import { fromCacheStorage, toCacheMetadata, type CachedAsset } from '../models/cachedAsset';
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import type { PutObjectCommandInput } from "@aws-sdk/client-s3";
+import { loadConfig } from "../config";
+import { s3Client } from "../lib/s3Client";
+import { toBuffer } from "../utils/stream";
+import {
+  fromCacheStorage,
+  toCacheMetadata,
+  type CachedAsset,
+} from "../models/cachedAsset";
 
 const config = loadConfig();
 
-const CACHE_PREFIX = config.CACHE_PREFIX ?? 'cache/';
-const MAX_IMAGE_BYTES = config.MAX_IMAGE_BYTES !== undefined ? Number(config.MAX_IMAGE_BYTES) : 10 * 1024 * 1024;
-const BUCKET = config.AWS_S3_BUCKET_NAME ?? (() => {
-  throw new Error('AWS_S3_BUCKET_NAME is required');
-})();
+const CACHE_PREFIX = config.CACHE_PREFIX ?? "cache/";
+const MAX_IMAGE_BYTES =
+  config.MAX_IMAGE_BYTES !== undefined
+    ? Number(config.MAX_IMAGE_BYTES)
+    : 10 * 1024 * 1024;
+const BUCKET =
+  config.AWS_S3_BUCKET_NAME ??
+  (() => {
+    throw new Error("AWS_S3_BUCKET_NAME is required");
+  })();
 
 const keyFor = (id: string) => `${CACHE_PREFIX}${id}`;
 
-export const getCachedImage = async (id: string): Promise<CachedAsset | null> => {
+export const getCachedImage = async (
+  id: string,
+): Promise<CachedAsset | null> => {
   const key = keyFor(id);
 
   try {
@@ -27,10 +38,16 @@ export const getCachedImage = async (id: string): Promise<CachedAsset | null> =>
     );
 
     const data = await toBuffer(response.Body, MAX_IMAGE_BYTES);
-    const contentType = response.ContentType ?? 'application/octet-stream';
+    const contentType = response.ContentType ?? "application/octet-stream";
     const metadata = response.Metadata ?? {};
 
-    return fromCacheStorage(id, data, contentType, metadata, response.LastModified);
+    return fromCacheStorage(
+      id,
+      data,
+      contentType,
+      metadata,
+      response.LastModified,
+    );
   } catch (error) {
     if (isNotFound(error)) {
       return null;
@@ -42,7 +59,7 @@ export const getCachedImage = async (id: string): Promise<CachedAsset | null> =>
 
 export const putCachedImage = async (
   asset: CachedAsset,
-  options: Partial<Pick<PutObjectCommandInput, 'CacheControl'>> = {},
+  options: Partial<Pick<PutObjectCommandInput, "CacheControl">> = {},
 ) => {
   const key = keyFor(asset.id);
 
@@ -54,17 +71,23 @@ export const putCachedImage = async (
       ContentType: asset.contentType,
       Metadata: toCacheMetadata(asset),
       ContentLength: asset.bytes,
-      CacheControl: options.CacheControl ?? 'public, max-age=7776000, immutable',
+      CacheControl:
+        options.CacheControl ?? "public, max-age=7776000, immutable",
     }),
   );
 };
 
 const isNotFound = (error: unknown): boolean => {
-  if (!error || typeof error !== 'object') {
+  if (!error || typeof error !== "object") {
     return false;
   }
 
-  const awsError = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+  const awsError = error as {
+    name?: string;
+    $metadata?: { httpStatusCode?: number };
+  };
 
-  return awsError.name === 'NoSuchKey' || awsError.$metadata?.httpStatusCode === 404;
+  return (
+    awsError.name === "NoSuchKey" || awsError.$metadata?.httpStatusCode === 404
+  );
 };

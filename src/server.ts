@@ -61,13 +61,11 @@ export const getApp = (config: AppConfig) => {
       ok = false;
       diagnostics.s3 = {
         ok: false,
-        error: 'AWS_S3_BUCKET_NAME is not configured',
+        error: "AWS_S3_BUCKET_NAME is not configured",
       };
     } else {
       try {
-        await s3Client.send(
-          new HeadBucketCommand({ Bucket: bucket })
-        );
+        await s3Client.send(new HeadBucketCommand({ Bucket: bucket }));
       } catch (error) {
         ok = false;
         diagnostics.s3 = {
@@ -118,7 +116,7 @@ export const getApp = (config: AppConfig) => {
           message,
           detail: err.cause ?? null,
         },
-        status
+        status,
       );
     }
 

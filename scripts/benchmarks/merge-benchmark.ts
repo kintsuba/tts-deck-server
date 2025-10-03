@@ -9,12 +9,15 @@
  * merge pipeline can be exercised end-to-end without external dependencies.
  */
 
-import { randomUUID } from 'node:crypto';
-import { performance } from 'node:perf_hooks';
-import sharp from 'sharp';
-import { applyTestEnv, installFetchMock } from '../../src/test/setup';
-import { resetS3Mock, mockCachedImageMissing } from '../../src/test/utils/s3Mock';
-import { resetConfigCache, loadConfig } from '../../src/config';
+import { randomUUID } from "node:crypto";
+import { performance } from "node:perf_hooks";
+import sharp from "sharp";
+import { applyTestEnv, installFetchMock } from "../../src/test/setup";
+import {
+  resetS3Mock,
+  mockCachedImageMissing,
+} from "../../src/test/utils/s3Mock";
+import { resetConfigCache, loadConfig } from "../../src/config";
 
 const iterations = Number(process.argv[2] ?? 3);
 const cardCount = Number(process.argv[3] ?? 70);
@@ -27,7 +30,12 @@ const createCardPayload = async (index: number, bucket: string) => {
       width: 128,
       height: 180,
       channels: 4,
-      background: { r: (index * 31) % 255, g: (index * 47) % 255, b: (index * 13) % 255, alpha: 1 },
+      background: {
+        r: (index * 31) % 255,
+        g: (index * 47) % 255,
+        b: (index * 13) % 255,
+        alpha: 1,
+      },
     },
   })
     .png()
@@ -38,8 +46,8 @@ const createCardPayload = async (index: number, bucket: string) => {
     response: {
       buffer,
       headers: {
-        'content-type': 'image/png',
-        'content-length': String(buffer.byteLength),
+        "content-type": "image/png",
+        "content-length": String(buffer.byteLength),
       },
     },
     cacheKey: `cache/${id}`,
@@ -51,10 +59,12 @@ const runIteration = async () => {
   resetConfigCache();
   applyTestEnv();
   const config = loadConfig();
-  const bucket = config.AWS_S3_BUCKET_NAME ?? (() => {
-    throw new Error('AWS_S3_BUCKET_NAME is required for the benchmark');
-  })();
-  const { mergeDeck } = await import('../../src/services/mergeService');
+  const bucket =
+    config.AWS_S3_BUCKET_NAME ??
+    (() => {
+      throw new Error("AWS_S3_BUCKET_NAME is required for the benchmark");
+    })();
+  const { mergeDeck } = await import("../../src/services/mergeService");
 
   const fetchMock = installFetchMock();
   resetS3Mock();
@@ -64,7 +74,9 @@ const runIteration = async () => {
   for (let index = 0; index < cardCount; index += 1) {
     const card = await createCardPayload(index, bucket);
     payload.push(card.descriptor);
-    fetchMock.enqueueBuffer(card.response.buffer, { headers: card.response.headers });
+    fetchMock.enqueueBuffer(card.response.buffer, {
+      headers: card.response.headers,
+    });
     mockCachedImageMissing(card.cacheKey, { bucket: card.bucket });
   }
 
@@ -93,11 +105,14 @@ const main = async () => {
     );
   }
 
-  const average = runs.reduce((acc, value) => acc + value.wallDuration, 0) / runs.length;
-  console.log(`\naverage wall duration: ${average.toFixed(2)}ms over ${runs.length} runs (cards=${cardCount})`);
+  const average =
+    runs.reduce((acc, value) => acc + value.wallDuration, 0) / runs.length;
+  console.log(
+    `\naverage wall duration: ${average.toFixed(2)}ms over ${runs.length} runs (cards=${cardCount})`,
+  );
 };
 
 main().catch((error) => {
-  console.error('Benchmark failed', error);
+  console.error("Benchmark failed", error);
   process.exitCode = 1;
 });

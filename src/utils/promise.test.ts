@@ -1,9 +1,9 @@
-import { strict as assert } from 'node:assert';
-import { setTimeout as sleep } from 'node:timers/promises';
-import test from 'node:test';
-import { mapConcurrently } from './promise';
+import { strict as assert } from "node:assert";
+import { setTimeout as sleep } from "node:timers/promises";
+import test from "node:test";
+import { mapConcurrently } from "./promise";
 
-test('mapConcurrently preserves original ordering', async () => {
+test("mapConcurrently preserves original ordering", async () => {
   const input = [1, 2, 3, 4, 5];
 
   const output = await mapConcurrently(input, 2, async (value) => {
@@ -14,7 +14,7 @@ test('mapConcurrently preserves original ordering', async () => {
   assert.deepEqual(output, [2, 4, 6, 8, 10]);
 });
 
-test('mapConcurrently does not exceed the concurrency limit', async () => {
+test("mapConcurrently does not exceed the concurrency limit", async () => {
   const input = Array.from({ length: 6 }, (_, index) => index);
   let active = 0;
   let peak = 0;
@@ -28,5 +28,9 @@ test('mapConcurrently does not exceed the concurrency limit', async () => {
   });
 
   assert.deepEqual(output, input);
-  assert.equal(peak <= 3, true, `Expected peak concurrency <= 3 but got ${peak}`);
+  assert.equal(
+    peak <= 3,
+    true,
+    `Expected peak concurrency <= 3 but got ${peak}`,
+  );
 });

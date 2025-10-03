@@ -1,6 +1,10 @@
-import { GetObjectCommand, PutObjectCommand, type PutObjectCommandInput } from '@aws-sdk/client-s3';
-import { mockClient } from 'aws-sdk-client-mock';
-import { S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  type PutObjectCommandInput,
+} from "@aws-sdk/client-s3";
+import { mockClient } from "aws-sdk-client-mock";
+import { S3Client } from "@aws-sdk/client-s3";
 
 const s3Mock = mockClient(S3Client);
 
@@ -20,7 +24,7 @@ export const resetS3Mock = () => {
 export const mockCachedImage = (
   key: string,
   data: Buffer,
-  contentType = 'image/png',
+  contentType = "image/png",
   options: KeyOptions = {},
 ) => {
   s3Mock.on(GetObjectCommand, commandMatcher(key, options)).resolves({
@@ -29,14 +33,19 @@ export const mockCachedImage = (
   });
 };
 
-export const mockCachedImageMissing = (key: string, options: KeyOptions = {}) => {
+export const mockCachedImageMissing = (
+  key: string,
+  options: KeyOptions = {},
+) => {
   s3Mock.on(GetObjectCommand, commandMatcher(key, options)).rejects({
-    name: 'NoSuchKey',
+    name: "NoSuchKey",
     $metadata: { httpStatusCode: 404 },
   });
 };
 
 export const getPutCommands = (): PutObjectCommandInput[] =>
-  s3Mock.commandCalls(PutObjectCommand).map((call) => call.args[0].input as PutObjectCommandInput);
+  s3Mock
+    .commandCalls(PutObjectCommand)
+    .map((call) => call.args[0].input as PutObjectCommandInput);
 
 export const getS3Mock = () => s3Mock;

@@ -1,10 +1,12 @@
-import sharp, { type Color } from 'sharp';
-import { loadConfig } from '../config';
-import type { ProvidedImage } from './imageProvider';
-import { GRID_COLUMNS, GRID_ROWS } from '../models/mergeRequest';
+import sharp, { type Color } from "sharp";
+import { loadConfig } from "../config";
+import type { ProvidedImage } from "./imageProvider";
+import { GRID_COLUMNS, GRID_ROWS } from "../models/mergeRequest";
 
 const config = loadConfig();
-const OUTPUT_FORMAT = config.MERGE_OUTPUT_FORMAT === 'jpeg' ? 'jpeg' : 'png';
+const OUTPUT_FORMAT = config.MERGE_OUTPUT_FORMAT === "jpeg" ? "jpeg" : "png";
+const CARD_WIDTH = 672;
+const CARD_HEIGHT = 936;
 
 export interface CompositeResult {
   buffer: Buffer;
@@ -12,7 +14,7 @@ export interface CompositeResult {
   height: number;
   tileWidth: number;
   tileHeight: number;
-  format: 'png' | 'jpeg';
+  format: "png" | "jpeg";
 }
 
 export interface GridDimensions {
@@ -30,40 +32,21 @@ export const composeGrid = async (
   grid: GridDimensions = DEFAULT_GRID,
 ): Promise<CompositeResult> => {
   if (images.length === 0) {
-    throw new Error('At least one image is required to compose grid');
+    throw new Error("At least one image is required to compose grid");
   }
 
-  const metadataList = await Promise.all(
-    images.map(async (image) => {
-      const metadata = await sharp(image.data).metadata();
+  const tileWidth = CARD_WIDTH;
+  const tileHeight = CARD_HEIGHT;
 
-      if (!metadata.width || !metadata.height) {
-        throw new Error(`Unable to determine dimensions for image ${image.id}`);
-      }
-
-      return {
-        id: image.id,
-        width: metadata.width,
-        height: metadata.height,
-      };
-    }),
-  );
-
-  const tileWidth = Math.max(...metadataList.map((meta) => meta.width));
-  const tileHeight = Math.max(...metadataList.map((meta) => meta.height));
-
-  if (!Number.isFinite(tileWidth) || !Number.isFinite(tileHeight)) {
-    throw new Error('Failed to resolve tile dimensions');
-  }
-
-  const background = OUTPUT_FORMAT === 'png'
-    ? { r: 0, g: 0, b: 0, alpha: 0 }
-    : { r: 0, g: 0, b: 0, alpha: 1 };
+  const background =
+    OUTPUT_FORMAT === "png"
+      ? { r: 0, g: 0, b: 0, alpha: 0 }
+      : { r: 0, g: 0, b: 0, alpha: 1 };
 
   const preparedBuffers: Buffer[] = [];
 
   const totalCells = grid.rows * grid.columns;
-  const channels = OUTPUT_FORMAT === 'png' ? 4 : 3;
+  const channels = OUTPUT_FORMAT === "png" ? 4 : 3;
 
   const blankTile = await sharp({
     create: {
@@ -78,35 +61,40 @@ export const composeGrid = async (
 
   for (const image of images) {
     let pipeline = sharp(image.data).resize(tileWidth, tileHeight, {
-      fit: 'contain',
+      fit: "contain",
       background,
     });
 
-    if (OUTPUT_FORMAT === 'jpeg') {
+    if (OUTPUT_FORMAT === "jpeg") {
       pipeline = pipeline.flatten({ background });
     }
 
-    const prepared = await pipeline
-      .toFormat(OUTPUT_FORMAT)
-      .toBuffer();
+    const prepared = await pipeline.toFormat(OUTPUT_FORMAT).toBuffer();
 
     preparedBuffers.push(prepared);
   }
 
   if (preparedBuffers.length < totalCells) {
-    preparedBuffers.push(...Array.from({ length: totalCells - preparedBuffers.length }, () => blankTile));
+    preparedBuffers.push(
+      ...Array.from(
+        { length: totalCells - preparedBuffers.length },
+        () => blankTile,
+      ),
+    );
   }
 
-  const composites = preparedBuffers.slice(0, totalCells).map((buffer, index) => {
-    const x = index % grid.columns;
-    const y = Math.floor(index / grid.columns);
+  const composites = preparedBuffers
+    .slice(0, totalCells)
+    .map((buffer, index) => {
+      const x = index % grid.columns;
+      const y = Math.floor(index / grid.columns);
 
-    return {
-      input: buffer,
-      top: y * tileHeight,
-      left: x * tileWidth,
-    };
-  });
+      return {
+        input: buffer,
+        top: y * tileHeight,
+        left: x * tileWidth,
+      };
+    });
 
   const outputWidth = tileWidth * grid.columns;
   const outputHeight = tileHeight * grid.rows;
@@ -122,10 +110,10 @@ export const composeGrid = async (
 
   const composed = canvas.composite(composites);
 
-  if (OUTPUT_FORMAT === 'png') {
+  if (OUTPUT_FORMAT === "png") {
     composed.png({ compressionLevel: 9 });
   } else {
-    composed.jpeg({ quality: 90, chromaSubsampling: '4:4:4' });
+    composed.jpeg({ quality: 90, chromaSubsampling: "4:4:4" });
   }
 
   const buffer = await composed.toBuffer();

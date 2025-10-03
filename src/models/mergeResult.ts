@@ -17,7 +17,7 @@ export interface MergeMetadata {
   output: {
     width: number;
     height: number;
-    format: 'png' | 'jpeg';
+    format: "png" | "jpeg";
     contentType: string;
   };
   cached: string[];
@@ -33,9 +33,9 @@ export interface MergeResult {
 }
 
 export const encodeMetadataHeader = (metadata: MergeMetadata): string =>
-  Buffer.from(JSON.stringify(metadata)).toString('base64url');
+  Buffer.from(JSON.stringify(metadata)).toString("base64url");
 
 export const decodeMetadataHeader = (value: string): MergeMetadata => {
-  const json = Buffer.from(value, 'base64url').toString('utf8');
+  const json = Buffer.from(value, "base64url").toString("utf8");
   return JSON.parse(json) as MergeMetadata;
 };

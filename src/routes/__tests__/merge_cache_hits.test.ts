@@ -79,7 +79,7 @@ test("POST /merge reuses cached entries without refetching", async () => {
     const metadataHeader = response.headers.get("X-Merge-Metadata");
     assert.ok(metadataHeader);
     const metadata = JSON.parse(
-      Buffer.from(metadataHeader, "base64url").toString("utf8")
+      Buffer.from(metadataHeader, "base64url").toString("utf8"),
     ) as Record<string, unknown>;
 
     assert.equal(metadata.totalRequested, 70);

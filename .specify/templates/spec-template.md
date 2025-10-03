@@ -6,6 +6,7 @@
 **Input**: User description: "$ARGUMENTS"
 
 ## Execution Flow (main)
+
 ```
 1. Parse user description from Input
    → If empty: ERROR "No feature description provided"
@@ -30,24 +31,28 @@
 ---
 
 ## ⚡ Quick Guidelines
+
 - ✅ Focus on WHAT users need and WHY
 - ❌ Avoid HOW to implement (no tech stack, APIs, code structure)
 - 👥 Written for business stakeholders, not developers
 - 🎯 Document UX patterns, accessibility commitments, and performance targets clearly
 
 ### Section Requirements
+
 - **Mandatory sections**: Must be completed for every feature
 - **Optional sections**: Include only when relevant to the feature
 - When a section doesn't apply, remove it entirely (don't leave as "N/A")
 
 ### For AI Generation
+
 When creating this spec from a user prompt:
+
 1. **Mark all ambiguities**: Use [NEEDS CLARIFICATION: specific question] for any assumption you'd need to make
 2. **Don't guess**: If the prompt doesn't specify something (e.g., "login system" without auth method), mark it
 3. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
 4. **Common underspecified areas**:
    - User types and permissions
-   - Data retention/deletion policies  
+   - Data retention/deletion policies
    - Performance targets and scale
    - Error handling behaviors
    - Integration requirements
@@ -55,50 +60,59 @@ When creating this spec from a user prompt:
 
 ---
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### Primary User Story
+
 [Describe the main user journey in plain language]
 
 ### Acceptance Scenarios
+
 1. **Given** [initial state], **When** [action], **Then** [expected outcome] (include expected latency or throughput when relevant)
 2. **Given** [initial state], **When** [action], **Then** [expected outcome] (note accessibility or UX constraints that MUST hold)
 
 ### Edge Cases
+
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
+
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
+- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST meet [performance/UX constraint, e.g., "respond within 200ms p95 while returning localized messaging"]
 
-*Example of marking unclear requirements:*
+_Example of marking unclear requirements:_
+
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
+
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
 
 ---
 
 ## Review & Acceptance Checklist
-*GATE: Automated checks run during main() execution*
+
+_GATE: Automated checks run during main() execution_
 
 ### Content Quality
+
 - [ ] No implementation details (languages, frameworks, APIs)
 - [ ] Focused on user value and business needs
 - [ ] Written for non-technical stakeholders
 - [ ] All mandatory sections completed
 
 ### Requirement Completeness
+
 - [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous  
+- [ ] Requirements are testable and unambiguous
 - [ ] Success criteria are measurable (include UX and performance metrics)
 - [ ] Scope is clearly bounded
 - [ ] Dependencies and assumptions identified
@@ -106,7 +120,8 @@ When creating this spec from a user prompt:
 ---
 
 ## Execution Status
-*Updated by main() during processing*
+
+_Updated by main() during processing_
 
 - [ ] User description parsed
 - [ ] Key concepts extracted
