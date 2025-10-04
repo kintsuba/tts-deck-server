@@ -1,13 +1,10 @@
 import sharp, { type Color } from "sharp";
-import { loadConfig } from "../config";
+import { getMergeOutputFormat } from "../config";
 import type { ProvidedImage } from "./imageProvider";
 import { GRID_COLUMNS, GRID_ROWS } from "../models/mergeRequest";
+import { CARD_WIDTH, CARD_HEIGHT } from "../models/cardDimensions";
 
-const config = loadConfig();
-const OUTPUT_FORMAT = config.MERGE_OUTPUT_FORMAT === "jpeg" ? "jpeg" : "png";
-const CARD_WIDTH = 672;
-const CARD_HEIGHT = 936;
-
+const OUTPUT_FORMAT = getMergeOutputFormat();
 export interface CompositeResult {
   buffer: Buffer;
   width: number;
@@ -28,10 +25,10 @@ const DEFAULT_GRID: GridDimensions = {
 };
 
 export const composeGrid = async (
-  images: readonly ProvidedImage[],
-  grid: GridDimensions = DEFAULT_GRID,
+  images: readonly (ProvidedImage | undefined)[],
+  grid: GridDimensions = DEFAULT_GRID
 ): Promise<CompositeResult> => {
-  if (images.length === 0) {
+  if (!images.some((image) => image)) {
     throw new Error("At least one image is required to compose grid");
   }
 
@@ -42,8 +39,6 @@ export const composeGrid = async (
     OUTPUT_FORMAT === "png"
       ? { r: 0, g: 0, b: 0, alpha: 0 }
       : { r: 0, g: 0, b: 0, alpha: 1 };
-
-  const preparedBuffers: Buffer[] = [];
 
   const totalCells = grid.rows * grid.columns;
   const channels = OUTPUT_FORMAT === "png" ? 4 : 3;
@@ -59,7 +54,18 @@ export const composeGrid = async (
     .toFormat(OUTPUT_FORMAT)
     .toBuffer();
 
-  for (const image of images) {
+  const preparedBuffers: Buffer[] = Array.from(
+    { length: totalCells },
+    () => blankTile,
+  );
+
+  for (let index = 0; index < Math.min(images.length, totalCells); index++) {
+    const image = images[index];
+
+    if (!image) {
+      continue;
+    }
+
     let pipeline = sharp(image.data).resize(tileWidth, tileHeight, {
       fit: "contain",
       background,
@@ -70,22 +76,10 @@ export const composeGrid = async (
     }
 
     const prepared = await pipeline.toFormat(OUTPUT_FORMAT).toBuffer();
-
-    preparedBuffers.push(prepared);
+    preparedBuffers[index] = prepared;
   }
 
-  if (preparedBuffers.length < totalCells) {
-    preparedBuffers.push(
-      ...Array.from(
-        { length: totalCells - preparedBuffers.length },
-        () => blankTile,
-      ),
-    );
-  }
-
-  const composites = preparedBuffers
-    .slice(0, totalCells)
-    .map((buffer, index) => {
+  const composites = preparedBuffers.map((buffer, index) => {
       const x = index % grid.columns;
       const y = Math.floor(index / grid.columns);
 

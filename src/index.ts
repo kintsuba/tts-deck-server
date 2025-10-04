@@ -1,9 +1,9 @@
 import { serve } from "@hono/node-server";
 import { getApp } from "./server";
-import { loadConfig } from "./config";
+import { getPort, loadConfig } from "./config";
 
 const config = loadConfig();
-const port = config.PORT !== undefined ? Number(config.PORT) : 3000;
+const port = getPort(config);
 
 const app = getApp(config);
 

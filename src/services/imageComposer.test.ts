@@ -48,13 +48,12 @@ test("composeGrid uses fixed tile dimensions for each card", async () => {
   applyTestEnv({ MERGE_OUTPUT_FORMAT: "png" });
   const { composeGrid } = await reloadComposer();
 
-  const images = [
-    await createImage(100, 150),
-    await createImage(120, 180),
-    await createImage(90, 160),
-  ];
+  const slots: Array<ProvidedImage | undefined> = Array.from({ length: 3 });
+  slots[0] = await createImage(100, 150);
+  slots[1] = await createImage(120, 180);
+  slots[2] = await createImage(90, 160);
 
-  const result = await composeGrid(images, { rows: 1, columns: 3 });
+  const result = await composeGrid(slots, { rows: 1, columns: 3 });
 
   assert.equal(result.tileWidth, 672);
   assert.equal(result.tileHeight, 936);
@@ -66,9 +65,11 @@ test("composeGrid pads empty cells when fewer images are supplied", async () => 
   applyTestEnv({ MERGE_OUTPUT_FORMAT: "png" });
   const { composeGrid } = await reloadComposer();
 
-  const images = [await createImage(80, 120), await createImage(80, 120)];
+  const slots: Array<ProvidedImage | undefined> = Array.from({ length: 4 });
+  slots[0] = await createImage(80, 120);
+  slots[1] = await createImage(80, 120);
 
-  const result = await composeGrid(images, { rows: 2, columns: 2 });
+  const result = await composeGrid(slots, { rows: 2, columns: 2 });
   const metadata = await sharp(result.buffer).metadata();
 
   assert.equal(result.width, result.tileWidth * 2);
@@ -82,8 +83,9 @@ test("composeGrid honours jpeg output configuration", async () => {
   const { composeGrid } = await reloadComposer();
 
   const image = await createImage(90, 90, { format: "jpeg" });
+  const slots: Array<ProvidedImage | undefined> = [image];
 
-  const result = await composeGrid([image], { rows: 1, columns: 1 });
+  const result = await composeGrid(slots, { rows: 1, columns: 1 });
   const metadata = await sharp(result.buffer).metadata();
 
   assert.equal(result.format, "jpeg");

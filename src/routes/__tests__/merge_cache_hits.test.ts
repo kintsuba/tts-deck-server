@@ -37,14 +37,14 @@ test("POST /merge reuses cached entries without refetching", async () => {
   resetS3Mock();
   const fetchMock = installFetchMock();
 
-  const payload: Array<{ id: string; imageUri: string }> = [];
+  const cards: Array<{ id: string; imageUri: string }> = [];
   const cachedIds = new Set<string>();
   const downloadIds: string[] = [];
 
-  for (let index = 0; index < 70; index += 1) {
+  for (let index = 0; index < 69; index += 1) {
     const id = randomUUID();
     const imageUri = `https://cdn.example.com/cards/${index}.png`;
-    payload.push({ id, imageUri });
+    cards.push({ id, imageUri });
 
     if (index % 2 === 0) {
       const buffer = await createTestImage(index);
@@ -64,6 +64,14 @@ test("POST /merge reuses cached entries without refetching", async () => {
       downloadIds.push(id);
     }
   }
+
+  const hiddenBuffer = await createTestImage(999);
+  const hiddenImage = `data:image/png;base64,${hiddenBuffer.toString("base64")}`;
+
+  const payload = {
+    cards,
+    hiddenImage,
+  };
 
   const { getApp } = await import("../../server");
   const app = getApp(config);
@@ -92,7 +100,8 @@ test("POST /merge reuses cached entries without refetching", async () => {
     cachedIds.forEach((id) => assert.ok(cached.has(id)));
 
     const downloaded = new Set(metadata.downloaded as string[]);
-    assert.equal(downloaded.size, downloadIds.length);
+    assert.equal(downloaded.size, downloadIds.length + 1);
+    assert.ok(downloaded.has("hidden-image"));
     downloadIds.forEach((id) => assert.ok(downloaded.has(id)));
 
     assert.equal(fetchMock.calls.length, downloadIds.length);

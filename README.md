@@ -32,14 +32,22 @@ pnpm install
 pnpm dev
 ```
 
-POST JSON payloads to `http://localhost:3000/merge` in the following format:
+POST JSON payloads to `http://localhost:3000/merge` with the following structure:
 
 ```json
-[
-  { "id": "<uuid>", "imageUri": "https://example.com/card-1.png" },
-  { "id": "<uuid>", "imageUri": "https://example.com/card-2.png" }
-]
+{
+  "cards": [
+    { "id": "<uuid>", "imageUri": "https://example.com/card-1.png" },
+    { "id": "<uuid>", "imageUri": "https://example.com/card-2.png" }
+  ],
+  "hiddenImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+}
 ```
+
+- `cards` must contain 1–70 entries. Each `id` must be a UUID and each `imageUri` must be a valid HTTP(S) URL.
+- `hiddenImage` is optional. When provided, supply a `data:` URI containing a base64-encoded PNG or JPEG. The server resizes this image to the standard card dimensions and appends it to the final composition.
+
+For backwards compatibility the API also accepts the legacy array payload (`[{ "id": "...", "imageUri": "..." }]`), which is equivalent to omitting the `hiddenImage` field.
 
 Responses stream the merged image. Metadata about cache hits/misses and image dimensions is embedded in the `X-Merge-Metadata` header (base64url-encoded JSON).
 

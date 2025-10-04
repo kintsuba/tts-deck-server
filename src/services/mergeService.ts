@@ -1,15 +1,35 @@
 import { performance } from "node:perf_hooks";
-import { loadConfig } from "../config";
-import { parseMergeRequest, type MergeRequest } from "../models/mergeRequest";
+import sharp from "sharp";
+import type { ZodError } from "zod";
+import { getFetchConcurrency } from "../config";
+import {
+  parseMergeRequest,
+  type MergeRequest,
+  type HiddenImage,
+  MergeRequestValidationError,
+} from "../models/mergeRequest";
 import type { MergeResult } from "../models/mergeResult";
 import { composeGrid } from "./imageComposer";
-import { getImage, ImageProvisionError } from "./imageProvider";
+import {
+  getImage,
+  ImageProvisionError,
+  type ProvidedImage,
+} from "./imageProvider";
 import { mapConcurrently } from "../utils/promise";
 import { metrics } from "../utils/metrics";
+import { CARD_WIDTH, CARD_HEIGHT } from "../models/cardDimensions";
+import { computeChecksum } from "../models/cachedAsset";
 
-const config = loadConfig();
-const FETCH_CONCURRENCY =
-  config.FETCH_CONCURRENCY !== undefined ? Number(config.FETCH_CONCURRENCY) : 5;
+const FETCH_CONCURRENCY = getFetchConcurrency();
+
+const HIDDEN_IMAGE_ID = "hidden-image";
+const HIDDEN_IMAGE_SOURCE_URL = "inline://hidden-image";
+const RESIZE_BACKGROUND = { r: 0, g: 0, b: 0, alpha: 0 } as const;
+const hiddenImageIssue: ZodError["issues"][number] = {
+  code: "custom",
+  message: "hiddenImage must decode to a valid PNG or JPEG image",
+  path: ["hiddenImage"],
+};
 
 export const mergeDeck = async (payload: unknown): Promise<MergeResult> => {
   const request = parseMergeRequest(payload);
@@ -56,18 +76,50 @@ export const executeMerge = async (
     },
   );
 
-  const cachedIds = images
+  const totalCells = request.grid.rows * request.grid.columns;
+  const hiddenImageIndex = totalCells - 1;
+
+  if (request.cards.length > hiddenImageIndex) {
+    throw new MergeRequestValidationError([
+      {
+        code: "custom",
+        message: `cards must contain ${hiddenImageIndex} items or fewer to reserve the final slot for the hidden image`,
+        path: ["cards"],
+      },
+    ]);
+  }
+
+  const imagesBySlot: (ProvidedImage | undefined)[] =
+    Array.from({ length: totalCells });
+
+  images.forEach((image, index) => {
+    const slotIndex = request.cards[index]?.index ?? index;
+    imagesBySlot[slotIndex] = image;
+  });
+
+  let hiddenImage: ProvidedImage | undefined;
+
+  if (request.hiddenImage) {
+    hiddenImage = await provideHiddenImage(request.hiddenImage);
+    imagesBySlot[hiddenImageIndex] = hiddenImage;
+  }
+
+  const imageList: ProvidedImage[] = hiddenImage
+    ? [...images, hiddenImage]
+    : [...images];
+
+  const cachedIds = imageList
     .filter((image) => image.wasCached)
     .map((image) => image.id);
-  const downloadedIds = images
+  const downloadedIds = imageList
     .filter((image) => !image.wasCached)
     .map((image) => image.id);
 
   metrics.counter("merge.cache.hits", cachedIds.length, {
-    total: request.cards.length,
+    total: imageList.length,
   });
   metrics.counter("merge.cache.misses", downloadedIds.length, {
-    total: request.cards.length,
+    total: imageList.length,
   });
 
   if (downloadFailures > 0) {
@@ -83,7 +135,7 @@ export const executeMerge = async (
   });
 
   const compositionStartedAt = performance.now();
-  const composition = await composeGrid(images, request.grid);
+  const composition = await composeGrid(imagesBySlot, request.grid);
   const compositionDuration = performance.now() - compositionStartedAt;
   metrics.timer("merge.compose.duration", compositionDuration, {
     rows: request.grid.rows,
@@ -98,7 +150,7 @@ export const executeMerge = async (
     buffer: composition.buffer,
     contentType,
     metadata: {
-      totalRequested: request.cards.length,
+      totalRequested: imageList.length,
       grid: request.grid,
       tile: {
         width: composition.tileWidth,
@@ -116,4 +168,39 @@ export const executeMerge = async (
       failures: [],
     },
   };
+};
+
+const provideHiddenImage = async (
+  hiddenImage: HiddenImage,
+): Promise<ProvidedImage> => {
+  try {
+    let pipeline = sharp(hiddenImage.data).resize(CARD_WIDTH, CARD_HEIGHT, {
+      fit: "contain",
+      background: RESIZE_BACKGROUND,
+    });
+
+    if (hiddenImage.contentType === "image/jpeg") {
+      pipeline = pipeline.flatten({ background: RESIZE_BACKGROUND });
+    }
+
+    const format = hiddenImage.contentType.endsWith("jpeg") ? "jpeg" : "png";
+    const buffer = await pipeline.toFormat(format).toBuffer();
+
+    return {
+      id: HIDDEN_IMAGE_ID,
+      data: buffer,
+      contentType: hiddenImage.contentType,
+      bytes: buffer.byteLength,
+      checksum: computeChecksum(buffer),
+      cachedAt: new Date(),
+      sourceUrl: HIDDEN_IMAGE_SOURCE_URL,
+      wasCached: false,
+    };
+  } catch (error) {
+    console.error("[mergeService] hidden image processing failed", {
+      name: (error as Error)?.name,
+      message: (error as Error)?.message,
+    });
+    throw new MergeRequestValidationError([hiddenImageIssue]);
+  }
 };

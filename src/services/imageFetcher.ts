@@ -4,17 +4,10 @@ import got, {
   TimeoutError,
   type Response,
 } from "got";
-import { loadConfig } from "../config";
+import { getFetchTimeoutMs, getMaxImageBytes } from "../config";
 
-const config = loadConfig();
-const FETCH_TIMEOUT_MS =
-  config.FETCH_TIMEOUT_MS !== undefined
-    ? Number(config.FETCH_TIMEOUT_MS)
-    : 15_000;
-const MAX_IMAGE_BYTES =
-  config.MAX_IMAGE_BYTES !== undefined
-    ? Number(config.MAX_IMAGE_BYTES)
-    : 10 * 1024 * 1024;
+const FETCH_TIMEOUT_MS = getFetchTimeoutMs();
+const MAX_IMAGE_BYTES = getMaxImageBytes();
 
 const SUPPORTED_PROTOCOLS = new Set(["http:", "https:"]);
 
@@ -29,7 +22,7 @@ export class ImageFetchError extends Error {
   constructor(
     message: string,
     readonly status?: number,
-    options?: { cause?: unknown },
+    options?: { cause?: unknown }
   ) {
     super(message, options);
     this.name = "ImageFetchError";
@@ -49,7 +42,7 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
 
   if (!SUPPORTED_PROTOCOLS.has(url.protocol)) {
     throw new ImageFetchError(
-      `Unsupported protocol for imageUri: ${url.protocol}`,
+      `Unsupported protocol for imageUri: ${url.protocol}`
     );
   }
 
@@ -94,7 +87,7 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
       throw new ImageFetchError(
         `Image at ${url} exceeds maximum allowed size (${canceledBytes} > ${MAX_IMAGE_BYTES})`,
         undefined,
-        { cause },
+        { cause }
       );
     }
 
@@ -112,9 +105,13 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
       console.warn("[imageFetcher] request canceled", {
         url: url.toString(),
       });
-      throw new ImageFetchError(`Request canceled while fetching image: ${url}`, undefined, {
-        cause,
-      });
+      throw new ImageFetchError(
+        `Request canceled while fetching image: ${url}`,
+        undefined,
+        {
+          cause,
+        }
+      );
     }
 
     if (cause instanceof RequestError) {
@@ -127,7 +124,7 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
       throw new ImageFetchError(
         `Failed to fetch image: ${url}${reason}`,
         undefined,
-        { cause },
+        { cause }
       );
     }
 
@@ -152,7 +149,7 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
     });
     throw new ImageFetchError(
       `Remote server responded with ${response.statusCode} for ${url}`,
-      response.statusCode,
+      response.statusCode
     );
   }
 
@@ -164,26 +161,28 @@ export const fetchImage = async (uri: string): Promise<FetchImageResult> => {
 
   if (!contentType || !contentType.startsWith("image/")) {
     throw new ImageFetchError(
-      `Unsupported content-type for ${url}: ${contentTypeRaw ?? "unknown"}`,
+      `Unsupported content-type for ${url}: ${contentTypeRaw ?? "unknown"}`
     );
   }
 
   const lengthHeader = response.headers["content-length"];
 
   if (lengthHeader) {
-    const lengthValue = Array.isArray(lengthHeader) ? lengthHeader[0] : lengthHeader;
+    const lengthValue = Array.isArray(lengthHeader)
+      ? lengthHeader[0]
+      : lengthHeader;
     const bytes = Number.parseInt(lengthValue ?? "", 10);
 
     if (Number.isFinite(bytes) && bytes > MAX_IMAGE_BYTES) {
       throw new ImageFetchError(
-        `Image at ${url} exceeds maximum allowed size (${bytes} > ${MAX_IMAGE_BYTES})`,
+        `Image at ${url} exceeds maximum allowed size (${bytes} > ${MAX_IMAGE_BYTES})`
       );
     }
   }
 
   if (buffer.byteLength > MAX_IMAGE_BYTES) {
     throw new ImageFetchError(
-      `Image at ${url} exceeds maximum allowed size (${buffer.byteLength} > ${MAX_IMAGE_BYTES})`,
+      `Image at ${url} exceeds maximum allowed size (${buffer.byteLength} > ${MAX_IMAGE_BYTES})`
     );
   }
 

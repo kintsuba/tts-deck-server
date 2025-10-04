@@ -1,13 +1,9 @@
-import { loadConfig } from "../config";
+import { getMaxImageBytes } from "../config";
 import { fromFetchedImage, type CachedAsset } from "../models/cachedAsset";
 import { ImageFetchError, fetchImage } from "./imageFetcher";
 import { getCachedImage, putCachedImage } from "./imageCache";
 
-const config = loadConfig();
-const MAX_IMAGE_BYTES =
-  config.MAX_IMAGE_BYTES !== undefined
-    ? Number(config.MAX_IMAGE_BYTES)
-    : 10 * 1024 * 1024;
+const MAX_IMAGE_BYTES = getMaxImageBytes();
 
 export interface ImageDescriptor {
   id: string;

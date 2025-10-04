@@ -1,12 +1,19 @@
 import { randomUUID } from "node:crypto";
-import { loadConfig, resetConfigCache } from "../config";
+import {
+  DEFAULT_FETCH_CONCURRENCY,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  DEFAULT_MAX_IMAGE_BYTES,
+  DEFAULT_PORT,
+  loadConfig,
+  resetConfigCache,
+} from "../config";
 
 type FetchResponder = () => Response | Promise<Response>;
 
 type FetchErrorFactory = () => unknown;
 
 export const DEFAULT_ENV = {
-  PORT: "3000",
+  PORT: String(DEFAULT_PORT),
   AWS_ENDPOINT_URL: "http://127.0.0.1:4566",
   AWS_DEFAULT_REGION: "us-east-1",
   AWS_S3_BUCKET_NAME: "tts-deck-cache-test",
@@ -14,9 +21,9 @@ export const DEFAULT_ENV = {
   AWS_SECRET_ACCESS_KEY: "local-secret-key",
   MERGE_OUTPUT_FORMAT: "png",
   CACHE_PREFIX: "cache/",
-  MAX_IMAGE_BYTES: String(10 * 1024 * 1024),
-  FETCH_TIMEOUT_MS: "15000",
-  FETCH_CONCURRENCY: "5",
+  MAX_IMAGE_BYTES: String(DEFAULT_MAX_IMAGE_BYTES),
+  FETCH_TIMEOUT_MS: String(DEFAULT_FETCH_TIMEOUT_MS),
+  FETCH_CONCURRENCY: String(DEFAULT_FETCH_CONCURRENCY),
 };
 
 type EnvOverrides = Partial<Record<keyof typeof DEFAULT_ENV, string>>;

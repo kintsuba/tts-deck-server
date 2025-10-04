@@ -3,6 +3,58 @@ import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { encodeMetadataHeader } from "../models/mergeResult";
 import { MergeRequestValidationError } from "../models/mergeRequest";
+
+const summarizePayload = (payload: unknown) => {
+  if (Array.isArray(payload)) {
+    const first = payload[0];
+    return {
+      payloadType: "array",
+      cards: payload.length,
+      firstId:
+        typeof first === "object" && first && "id" in first
+          ? (first as { id?: unknown }).id
+          : undefined,
+    };
+  }
+
+  if (payload && typeof payload === "object") {
+    const record = payload as Record<string, unknown>;
+    const cards = Array.isArray(record.cards) ? record.cards : [];
+    const first = cards[0];
+    const hiddenImage = typeof record.hiddenImage === "string";
+
+    const hiddenImageValue = hiddenImage
+      ? String(record.hiddenImage)
+      : undefined;
+    const commaIndex = hiddenImageValue?.indexOf(",") ?? -1;
+    const descriptor =
+      hiddenImageValue && commaIndex > 5
+        ? hiddenImageValue.slice(5, commaIndex)
+        : undefined;
+    const [hiddenImageMime, hiddenImageEncoding] = descriptor
+      ? descriptor.split(";")
+      : [undefined, undefined];
+
+    return {
+      payloadType: "object",
+      keys: Object.keys(record).slice(0, 10),
+      cards: cards.length,
+      firstId:
+        typeof first === "object" && first && "id" in first
+          ? (first as { id?: unknown }).id
+          : undefined,
+      hiddenImage,
+      hiddenImageLength: hiddenImageValue?.length,
+      hiddenImageMime,
+      hiddenImageEncoding,
+      hiddenImagePreview: hiddenImageValue?.slice(0, 120),
+    };
+  }
+
+  return {
+    payloadType: typeof payload,
+  };
+};
 import { mergeDeck } from "../services/mergeService";
 import { ImageProvisionError } from "../services/imageProvider";
 import type { Logger } from "../utils/logger";
@@ -27,8 +79,11 @@ export const registerMergeRoute = (app: Hono) => {
       : Buffer.byteLength(JSON.stringify(payload ?? {}));
 
     c.set("payloadBytes", payloadBytes);
+    const payloadSummary = summarizePayload(payload);
+
     requestLogger?.info("merge.received", {
       payloadBytes,
+      ...payloadSummary,
     });
 
     try {
@@ -58,10 +113,22 @@ export const registerMergeRoute = (app: Hono) => {
       if (error instanceof MergeRequestValidationError) {
         c.set("mergeMetrics", { payloadBytes });
         c.set("responseStatus", 422);
-        requestLogger?.warn("merge.validation_failed", {
-          payloadBytes,
-          issues: error.issues.length,
-        });
+        if (requestLogger) {
+          const issueSummaries = error.issues.map((issue) =>
+            summarizeIssue(issue),
+          );
+
+          requestLogger.debug("merge.validation_issue_details", {
+            payloadBytes,
+            issues: issueSummaries,
+            cardsPreview: summarizeCards(payload),
+          });
+
+          requestLogger.warn("merge.validation_failed", {
+            payloadBytes,
+            issues: error.issues.length,
+          });
+        }
         const response = c.json(
           {
             message: "Request validation failed",
@@ -104,4 +171,81 @@ export const registerMergeRoute = (app: Hono) => {
       throw error;
     }
   });
+};
+
+const summarizeIssue = (issue: unknown) => {
+  if (!issue || typeof issue !== "object") {
+    return { code: "unknown", message: "Non-object issue", raw: issue };
+  }
+
+  const record = issue as Record<string, unknown> & {
+    code?: string;
+    message?: string;
+    path?: unknown;
+    unionErrors?: unknown;
+  };
+
+  const code = typeof record.code === "string" ? record.code : "unknown";
+  const message =
+    typeof record.message === "string" ? record.message : undefined;
+  const path = Array.isArray(record.path) ? record.path : undefined;
+  let unionIssues: unknown;
+
+  if (code === "invalid_union" && Array.isArray(record.unionErrors)) {
+    unionIssues = record.unionErrors.map((unionError) => {
+      if (!unionError || typeof unionError !== "object") {
+        return unionError;
+      }
+
+      const unionRecord = unionError as { issues?: unknown };
+      if (!Array.isArray(unionRecord.issues)) {
+        return unionError;
+      }
+
+      return unionRecord.issues.map((unionIssue) => {
+        if (!unionIssue || typeof unionIssue !== "object") {
+          return unionIssue;
+        }
+
+        const entry = unionIssue as Record<string, unknown>;
+        return {
+          code: typeof entry.code === "string" ? entry.code : "unknown",
+          message:
+            typeof entry.message === "string" ? entry.message : undefined,
+          path: Array.isArray(entry.path) ? entry.path : undefined,
+        };
+      });
+    });
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(JSON.stringify(issue));
+  } catch {
+    raw = String(issue);
+  }
+
+  return {
+    code,
+    message,
+    path,
+    unionIssues,
+    raw,
+  };
+};
+
+const summarizeCards = (payload: unknown) => {
+  if (Array.isArray(payload)) {
+    return payload.slice(0, 3);
+  }
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    Array.isArray((payload as { cards?: unknown }).cards)
+  ) {
+    return ((payload as { cards: unknown[] }).cards ?? []).slice(0, 3);
+  }
+
+  return undefined;
 };

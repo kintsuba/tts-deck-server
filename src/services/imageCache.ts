@@ -1,6 +1,10 @@
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import type { PutObjectCommandInput } from "@aws-sdk/client-s3";
-import { loadConfig } from "../config";
+import {
+  getCachePrefix,
+  getMaxImageBytes,
+  getRequiredConfigValue,
+} from "../config";
 import { s3Client } from "../lib/s3Client";
 import { toBuffer } from "../utils/stream";
 import {
@@ -9,18 +13,9 @@ import {
   type CachedAsset,
 } from "../models/cachedAsset";
 
-const config = loadConfig();
-
-const CACHE_PREFIX = config.CACHE_PREFIX ?? "cache/";
-const MAX_IMAGE_BYTES =
-  config.MAX_IMAGE_BYTES !== undefined
-    ? Number(config.MAX_IMAGE_BYTES)
-    : 10 * 1024 * 1024;
-const BUCKET =
-  config.AWS_S3_BUCKET_NAME ??
-  (() => {
-    throw new Error("AWS_S3_BUCKET_NAME is required");
-  })();
+const CACHE_PREFIX = getCachePrefix();
+const MAX_IMAGE_BYTES = getMaxImageBytes();
+const BUCKET = getRequiredConfigValue("AWS_S3_BUCKET_NAME");
 
 const keyFor = (id: string) => `${CACHE_PREFIX}${id}`;
 

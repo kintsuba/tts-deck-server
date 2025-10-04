@@ -33,12 +33,12 @@ test("POST /merge merges a full deck with fresh downloads", async () => {
   resetS3Mock();
   const fetchMock = installFetchMock();
 
-  const payload: Array<{ id: string; imageUri: string }> = [];
+  const cards: Array<{ id: string; imageUri: string }> = [];
 
-  for (let index = 0; index < 70; index += 1) {
+  for (let index = 0; index < 69; index += 1) {
     const id = randomUUID();
     const imageUri = `https://cdn.example.com/cards/${index}.png`;
-    payload.push({ id, imageUri });
+    cards.push({ id, imageUri });
 
     const buffer = await createTestImage(index);
     fetchMock.enqueueBuffer(buffer, {
@@ -50,6 +50,14 @@ test("POST /merge merges a full deck with fresh downloads", async () => {
 
     mockCachedImageMissing(`cache/${id}`, { bucket: TEST_BUCKET });
   }
+
+  const hiddenBuffer = await createTestImage(999);
+  const hiddenImage = `data:image/png;base64,${hiddenBuffer.toString("base64")}`;
+
+  const payload = {
+    cards,
+    hiddenImage,
+  };
 
   const { getApp } = await import("../../server");
   const app = getApp(config);
@@ -78,7 +86,9 @@ test("POST /merge merges a full deck with fresh downloads", async () => {
 
     assert.equal(metadata.totalRequested, 70);
     assert.deepEqual(metadata.cached, []);
-    assert.deepEqual(new Set(metadata.downloaded as string[]).size, 70);
+    const downloaded = new Set(metadata.downloaded as string[]);
+    assert.equal(downloaded.size, 70);
+    assert.ok(downloaded.has("hidden-image"));
     assert.equal((metadata.grid as { rows: number }).rows, 7);
     assert.equal((metadata.grid as { columns: number }).columns, 10);
     assert.equal(typeof (metadata.tile as { width: number }).width, "number");
@@ -87,7 +97,7 @@ test("POST /merge merges a full deck with fresh downloads", async () => {
     assert.deepEqual(metadata.failures, []);
 
     const putCommands = getPutCommands();
-    assert.equal(putCommands.length, 70);
+    assert.equal(putCommands.length, 69);
     for (const command of putCommands) {
       assert.equal(command.Bucket, TEST_BUCKET);
       assert.ok(command.Key?.startsWith("cache/"));
